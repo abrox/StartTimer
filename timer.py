@@ -14,17 +14,45 @@ Created by Jacob Hallen, AB Strakt, Sweden.2001-10-17
 """
 import Tkinter
 import time
-import threading
-import random
 import Queue
+import wiiconnection as wii
 
+
+ 
 class GuiPart:
     def __init__(self, master, queue, endCommand):
         self.queue = queue
         # Set up the GUI
-        console = Tkinter.Button(master, text='Done', command=endCommand)
-        console.pack()
+        frame = Tkinter.Frame(master)
+        frame.pack()
+        self.lText = Tkinter.StringVar()
+        self.label = Tkinter.Label(frame, textvariable = self.lText)
+        self.label.pack(side=Tkinter.TOP)
+        self.button = Tkinter.Button(frame, text='Done', command=endCommand)
+        self.button.pack(side = Tkinter.BOTTOM )
         # Add more GUI stuff here
+
+
+    def handleWiiLost(self):
+        self.lText.set('No connection to WII press 1&2 to detct remote....')
+
+    def handleWiiFound(self):
+        self.lText.set('Remote found')
+
+    def handleStart(self):
+        print 'Start'
+
+
+    def handleStopTimer(self):
+        print 'STop'
+
+
+    def handleShowNext(self):
+        print 'SHow Next'
+
+
+    def handleShowPrev(self):
+        print 'SHow prev'
 
     def processIncoming(self):
         """
@@ -33,9 +61,20 @@ class GuiPart:
         while self.queue.qsize():
             try:
                 msg = self.queue.get(0)
-                # Check contents of message and do what it says
-                # As a test, we simply print it
-                print msg
+                if (msg == wii.WII_LOST):
+                    self.handleWiiLost()
+                elif (msg == wii.WII_FOUND):
+                    self.handleWiiFound()
+                elif (msg == wii.START):
+                    self.handleStart()
+                elif (msg == wii.STOP):
+                    self.handleStopTimer()
+                elif (msg == wii.SHOW_NEXT):
+                    self.handleShowNext()
+                elif (msg == wii.SHOW_PREV):
+                    self.handleShowPrev()
+                else:
+                    print msg
             except Queue.Empty:
                 pass
 
@@ -61,10 +100,8 @@ class ThreadedClient:
 
         # Set up the thread to do asynchronous I/O
         # More can be made if necessary
-        self.running = 1
-        self.thread1 = threading.Thread(target=self.workerThread1)
-        self.thread1.start()
-
+        self.wiiServer = wii.WiiServer(self.queue)
+        self.wiiServer.start()    
         # Start the periodic call in the GUI to check if the queue contains
         # anything
         self.periodicCall()
@@ -74,34 +111,18 @@ class ThreadedClient:
         Check every 100 ms if there is something new in the queue.
         """
         self.gui.processIncoming()
-        if not self.running:
+        if not self.wiiServer.isRunning():
             # This is the brutal stop of the system. You may want to do
             # some cleanup before actually shutting it down.
             import sys
             sys.exit(1)
         self.master.after(100, self.periodicCall)
-
-    def workerThread1(self):
-        """
-        This is where we handle the asynchronous I/O. For example, it may be
-        a 'select()'.
-        One important thing to remember is that the thread has to yield
-        control.
-        """
-        while self.running:
-            # To simulate asynchronous I/O, we create a random number at
-            # random intervals. Replace the following 2 lines with the real
-            # thing.
-            time.sleep(rand.random() * 0.3)
-            msg = rand.random()
-            self.queue.put(msg)
-
+               
     def endApplication(self):
-        self.running = 0
-
-rand = random.Random()
-root = Tkinter.Tk()
-
-client = ThreadedClient(root)
-root.mainloop()
+        self.wiiServer.stop()
+        
+if __name__ == "__main__":
+    root = Tkinter.Tk()
+    client = ThreadedClient(root)
+    root.mainloop()
 ## end of http://code.activestate.com/recipes/82965/ }}}
