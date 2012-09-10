@@ -61,9 +61,9 @@ class GuiPart:
         while self.queue.qsize():
             try:
                 msg = self.queue.get(0)
-                if (msg == wii.WII_LOST):
+                if (msg == wii.LOST):
                     self.handleWiiLost()
-                elif (msg == wii.WII_FOUND):
+                elif (msg == wii.FOUND):
                     self.handleWiiFound()
                 elif (msg == wii.START):
                     self.handleStart()
@@ -100,7 +100,7 @@ class ThreadedClient:
 
         # Set up the thread to do asynchronous I/O
         # More can be made if necessary
-        self.wiiServer = wii.WiiServer(self.queue)
+        self.wiiServer = wii.Server(self.queue)
         self.wiiServer.start()    
         # Start the periodic call in the GUI to check if the queue contains
         # anything
