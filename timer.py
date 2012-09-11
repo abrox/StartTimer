@@ -17,9 +17,13 @@ import time
 import Queue
 import wiiconnection as wii
 
-
  
 class GuiPart:
+    INIT =0
+    STOPPED = 1
+    WAIT_RACE_BEGIN = 2
+    RACE = 3
+    
     def __init__(self, master, queue, endCommand):
         self.queue = queue
         # Set up the GUI
@@ -30,8 +34,12 @@ class GuiPart:
         self.label.pack(side=Tkinter.TOP)
         self.button = Tkinter.Button(frame, text='Done', command=endCommand)
         self.button.pack(side = Tkinter.BOTTOM )
+        self.state = self.STOPPED
+        self.timerTick=0
         # Add more GUI stuff here
 
+    def changeState(self,newState):
+        self.state = newState
 
     def handleWiiLost(self):
         self.lText.set('No connection to WII press 1&2 to detct remote....')
@@ -40,44 +48,71 @@ class GuiPart:
         self.lText.set('Remote found')
 
     def handleStart(self):
+        self.timerTick = 300
         print 'Start'
-
 
     def handleStopTimer(self):
         print 'STop'
 
-
     def handleShowNext(self):
         print 'SHow Next'
 
-
     def handleShowPrev(self):
         print 'SHow prev'
-
-    def processIncoming(self):
+    def showRaceTimer(self):
+        hour = self.timerTick/360
+        timeLeft = self.timerTick%360
+        
+        mins = timeLeft/60
+        secs = timeLeft%60
+        timeString=''
+        if hour:
+            timeString = '%02d:'%hour
+        if hour or mins:
+            timeString += '%02d:'%mins 
+                   
+        timeString += '%02d'%secs    
+        self.lText.set(timeString)
+    def processIncoming(self,msg):
         """
-        Handle all the messages currently in the queue (if any).
+        
         """
-        while self.queue.qsize():
-            try:
-                msg = self.queue.get(0)
-                if (msg == wii.LOST):
-                    self.handleWiiLost()
-                elif (msg == wii.FOUND):
-                    self.handleWiiFound()
-                elif (msg == wii.START):
-                    self.handleStart()
-                elif (msg == wii.STOP):
-                    self.handleStopTimer()
-                elif (msg == wii.SHOW_NEXT):
-                    self.handleShowNext()
-                elif (msg == wii.SHOW_PREV):
-                    self.handleShowPrev()
-                else:
-                    print msg
-            except Queue.Empty:
-                pass
-
+        ###################################################
+        if self.state == self.STOPPED:
+            if (msg == wii.LOST):
+                self.handleWiiLost()
+            elif (msg == wii.FOUND):
+                self.timerTick = 300
+                self.handleWiiFound()
+                self.showRaceTimer()
+            elif (msg == wii.START):
+                self.handleStart()
+                self.changeState(self.WAIT_RACE_BEGIN)
+            elif (msg == wii.SHOW_NEXT):
+                self.handleShowNext()
+            elif (msg == wii.SHOW_PREV):
+                self.handleShowPrev()
+        ####################################################
+        elif self.state == self.WAIT_RACE_BEGIN:
+            if (msg == 'ONE_SEC_TIMER'):
+                self.timerTick-=1
+                self.showRaceTimer()
+                if (self.timerTick ==0):
+                    self.changeState(self.RACE)
+            elif (msg == wii.STOP):
+                self.timerTick = 300
+                self.handleStopTimer()
+                self.showRaceTimer()
+                self.changeState(self.STOPPED)
+        ####################################################    
+        elif self.state == self.RACE:
+            if (msg == wii.STOP):
+                self.handleStopTimer()
+                self.changeState(self.STOPPED)
+            if (msg == 'ONE_SEC_TIMER'):
+                self.timerTick+=1
+                self.showRaceTimer()
+        ####################################################
 class ThreadedClient:
     """
     Launch the main part of the GUI and the worker thread. periodicCall and
@@ -105,12 +140,22 @@ class ThreadedClient:
         # Start the periodic call in the GUI to check if the queue contains
         # anything
         self.periodicCall()
-
+        self.master.after(1000, self.oneSecTimer)
+        
+    def oneSecTimer(self):
+        self.gui.processIncoming('ONE_SEC_TIMER')
+        self.master.after(1000, self.oneSecTimer)
     def periodicCall(self):
         """
         Check every 100 ms if there is something new in the queue.
         """
-        self.gui.processIncoming()
+        while self.queue.qsize():
+            try:
+                msg = self.queue.get(0)
+                self.gui.processIncoming(msg)
+            except Queue.Empty:
+                pass
+
         if not self.wiiServer.isRunning():
             # This is the brutal stop of the system. You may want to do
             # some cleanup before actually shutting it down.
