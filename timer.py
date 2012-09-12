@@ -30,12 +30,16 @@ class GuiPart:
         # Set upthe GUI
         self._textFont = tkFont.Font(name="TextFont")
         self._textFont.configure(**tkFont.nametofont("TkDefaultFont").configure())
+        
+        self._sbFont = tkFont.Font(name="StatusBarFont")
+        self._sbFont.configure(**tkFont.nametofont("TkDefaultFont").configure())
+        
         toolbar = tk.Frame(master, borderwidth=0)
         container = tk.Frame(master, borderwidth=1, relief="sunken", 
                              width=600, height=600)
         container.grid_propagate(False)
-        toolbar.pack(side="top", fill="x")
-        container.pack(side="bottom", fill="both", expand=True)
+        toolbar.pack(side="bottom", fill="x")
+        container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
         
@@ -43,22 +47,22 @@ class GuiPart:
         text = tk.Label(container, font="TextFont", textvariable=self.lText)
         text.grid(row=0, column=0, sticky="nsew")
         
-        #zoomin = tk.Button(toolbar, text="+", command=self.zoom_in)
-        #zoomout = tk.Button(toolbar, text="-", command=self.zoom_out)
-        #zoomin.pack(side="left")
-        #zoomout.pack(side="left")
-        #text.insert("end", '''Press te + and - buttons to increase or decrease the font size''')
-        master.bind("<Configure>", self.resize)
+        self.statBarText = tk.StringVar()
+        lStatus = tk.Label(toolbar, font='StatusBarFont', textvariable=self.statBarText )
+        lStatus.pack(side='left')
+       
+        container.bind("<Configure>", self.resize)
         
         self.state = self.STOPPED
-        self.timerTick=0
+        self.timerTick=66
         self.apu = 0
+        self.showRaceTimer()
         # Add more UI stuff here
 
     def ScaleFont(self, height, width,tLen):
         if not tLen:
             return
-        
+        print 'h:%d, w%d, l%d'%(height, width,tLen)
         font = tkFont.nametofont("TextFont")
         size = int(height * 0.7)
         size2 = int((width / tLen) * 1.3)
@@ -67,22 +71,25 @@ class GuiPart:
         font.configure(size=size)
 
     def resize(self,event):
+        print "resize"
         self.ScaleFont(event.height,event.width,len(self.lText.get()))
         
     def changeState(self,newState):
         self.state = newState
 
     def handleWiiLost(self):
-        self.lText.set('No connection to WII press 1&2 to detct remote....')
-
+        self.statBarText.set('No connection to WII press 1&2 to detct remote....')
+        pass
     def handleWiiFound(self):
-        self.lText.set('Remote found')
-
+        self.statBarText.set('Remote found')
+        pass
     def handleStart(self):
         self.timerTick = 66
         print 'Start'
 
     def handleStopTimer(self):
+        self.timerTick = 300
+        self.showRaceTimer()
         print 'STop'
 
     def handleShowNext(self):
@@ -121,9 +128,7 @@ class GuiPart:
             if (msg == wii.LOST):
                 self.handleWiiLost()
             elif (msg == wii.FOUND):
-                self.timerTick = 300
                 self.handleWiiFound()
-                self.showRaceTimer()
             elif (msg == wii.START):
                 self.handleStart()
                 self.changeState(self.WAIT_RACE_BEGIN)
@@ -139,9 +144,7 @@ class GuiPart:
                 if (self.timerTick ==0):
                     self.changeState(self.RACE)
             elif (msg == wii.STOP):
-                self.timerTick = 300
                 self.handleStopTimer()
-                self.showRaceTimer()
                 self.changeState(self.STOPPED)
         ####################################################    
         elif self.state == self.RACE:
@@ -209,4 +212,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     client = ThreadedClient(root)
     root.mainloop()
-## end of http://code.activestate.com/recipes/82965/ }}}
