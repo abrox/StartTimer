@@ -40,20 +40,32 @@ class Server:
         self.changeState(self.NOT_CONNECTED)
         self.queue.put(LOST)
         wm = None
+        TimeOn={}
+        SLEEP_TIME=0.01
         while self.running:
             #######################################
             if ( self.state == self.NOT_CONNECTED):
-                wm = cwiid.Wiimote()
-                #enable button reporting
-                wm.rpt_mode = cwiid.RPT_BTN
-                self.queue.put(FOUND)
-                self.changeState(self.CONNECTED)
-               
+                try:
+                    wm = cwiid.Wiimote()
+                    #enable button reporting
+                    wm.rpt_mode = cwiid.RPT_BTN
+                    self.queue.put(FOUND)
+                    self.changeState(self.CONNECTED)
+                except:
+                    pass
+                
             #######################################     
             elif ( self.state == self.CONNECTED): 
                 msg = ''
+                #User must hold A button some while before we send stop message
                 if(wm.state['buttons'] & cwiid.BTN_A):
-                    msg = STOP
+                    TimeOn[cwiid.BTN_A]+=1
+                    if (TimeOn[cwiid.BTN_A]*SLEEP_TIME >= 1.5):
+                        TimeOn[cwiid.BTN_A] = 0
+                        msg = STOP
+                else:#reset counter when button released
+                    TimeOn[cwiid.BTN_A] = 0
+                       
                 if(wm.state['buttons'] & cwiid.BTN_B):
                     msg = START
                     
@@ -61,4 +73,5 @@ class Server:
                 if not (msg =='' ):
                     self.queue.put(msg)                    
             #####################################        
-            time.sleep(0.01)
+            time.sleep(SLEEP_TIME)
+            
