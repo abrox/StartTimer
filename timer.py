@@ -12,10 +12,10 @@ something in the queue that needs processing. Other solutions are possible,
 but they add a lot of complexity to the application.
 Created by Jacob Hallen, AB Strakt, Sweden.2001-10-17
 """
-import Tkinter
-import time
+import Tkinter as tk
 import Queue
 import wiiconnection as wii
+import tkFont
 
  
 class GuiPart:
@@ -26,18 +26,49 @@ class GuiPart:
     
     def __init__(self, master, queue, endCommand):
         self.queue = queue
-        # Set up the GUI
-        frame = Tkinter.Frame(master)
-        frame.pack()
-        self.lText = Tkinter.StringVar()
-        self.label = Tkinter.Label(frame, textvariable = self.lText)
-        self.label.pack(side=Tkinter.TOP)
-        self.button = Tkinter.Button(frame, text='Done', command=endCommand)
-        self.button.pack(side = Tkinter.BOTTOM )
+        self.parent = master
+        # Set upthe GUI
+        self._textFont = tkFont.Font(name="TextFont")
+        self._textFont.configure(**tkFont.nametofont("TkDefaultFont").configure())
+        toolbar = tk.Frame(master, borderwidth=0)
+        container = tk.Frame(master, borderwidth=1, relief="sunken", 
+                             width=600, height=600)
+        container.grid_propagate(False)
+        toolbar.pack(side="top", fill="x")
+        container.pack(side="bottom", fill="both", expand=True)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        
+        self.lText = tk.StringVar()
+        text = tk.Label(container, font="TextFont", textvariable=self.lText)
+        text.grid(row=0, column=0, sticky="nsew")
+        
+        #zoomin = tk.Button(toolbar, text="+", command=self.zoom_in)
+        #zoomout = tk.Button(toolbar, text="-", command=self.zoom_out)
+        #zoomin.pack(side="left")
+        #zoomout.pack(side="left")
+        #text.insert("end", '''Press te + and - buttons to increase or decrease the font size''')
+        master.bind("<Configure>", self.resize)
+        
         self.state = self.STOPPED
         self.timerTick=0
-        # Add more GUI stuff here
+        self.apu = 0
+        # Add more UI stuff here
 
+    def ScaleFont(self, height, width,tLen):
+        if not tLen:
+            return
+        
+        font = tkFont.nametofont("TextFont")
+        size = int(height * 0.7)
+        size2 = int((width / tLen) * 1.3)
+        if size2 < size:
+            size = size2
+        font.configure(size=size)
+
+    def resize(self,event):
+        self.ScaleFont(event.height,event.width,len(self.lText.get()))
+        
     def changeState(self,newState):
         self.state = newState
 
@@ -48,7 +79,7 @@ class GuiPart:
         self.lText.set('Remote found')
 
     def handleStart(self):
-        self.timerTick = 300
+        self.timerTick = 66
         print 'Start'
 
     def handleStopTimer(self):
@@ -73,6 +104,14 @@ class GuiPart:
                    
         timeString += '%02d'%secs    
         self.lText.set(timeString)
+        sLen = len(timeString)
+        
+        if not (sLen == 0 or sLen == self.apu):
+            self.apu = sLen
+            width= self.parent.winfo_width()
+            height = self.parent.winfo_height()
+            self.ScaleFont(height, width,sLen)
+            
     def processIncoming(self,msg):
         """
         
@@ -167,7 +206,7 @@ class ThreadedClient:
         self.wiiServer.stop()
         
 if __name__ == "__main__":
-    root = Tkinter.Tk()
+    root = tk.Tk()
     client = ThreadedClient(root)
     root.mainloop()
 ## end of http://code.activestate.com/recipes/82965/ }}}
