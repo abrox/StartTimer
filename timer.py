@@ -54,8 +54,10 @@ class GuiPart:
         container.bind("<Configure>", self.resize)
         master.protocol("WM_DELETE_WINDOW", endCommand)
 
+        self.Timers=[60,120,180,240,300]
+        self.usedTimer = 4 #5 min is default
         self.state = self.STOPPED
-        self.timerTick=66
+        self.timerTick=self.Timers[self.usedTimer]
         self.apu = 0
         self.showRaceTimer()
         # Add more UI stuff here
@@ -84,19 +86,34 @@ class GuiPart:
         self.statBarText.set('Remote found')
         pass
     def handleStart(self):
-        self.timerTick = 66
+        self.timerTick = self.Timers[self.usedTimer]
         print 'Start'
 
     def handleStopTimer(self):
-        self.timerTick = 300
+        self.timerTick = self.Timers[self.usedTimer]
         self.showRaceTimer()
         print 'STop'
 
     def handleShowNext(self):
-        print 'SHow Next'
+        try:
+            self.timerTick = self.Timers[self.usedTimer+1]
+            self.usedTimer+=1
+        except IndexError:
+            self.timerTick = self.Timers[self.usedTimer]
+        
+        self.showRaceTimer()
+        print 'SHow Next %d'%self.usedTimer
 
     def handleShowPrev(self):
-        print 'SHow prev'
+        try:
+            self.timerTick = self.Timers[self.usedTimer-1]
+            self.usedTimer-=1
+        except IndexError:
+            self.timerTick = self.Timers[self.usedTimer]
+        
+        self.showRaceTimer()
+        
+        print 'SHow prev%d'%self.usedTimer
     def showRaceTimer(self):
         hour = self.timerTick/360
         timeLeft = self.timerTick%360

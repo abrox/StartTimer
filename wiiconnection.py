@@ -56,22 +56,37 @@ class Server:
                 
             #######################################     
             elif ( self.state == self.CONNECTED): 
-                msg = ''
+                
                 #User must hold A button some while before we send stop message
                 if(wm.state['buttons'] & cwiid.BTN_A):
                     TimeOn[cwiid.BTN_A]+=1
                     if (TimeOn[cwiid.BTN_A]*SLEEP_TIME >= 1.5):
                         TimeOn[cwiid.BTN_A] = 0
-                        msg = STOP
+                        self.queue.put(STOP) 
                 else:#reset counter when button released
                     TimeOn[cwiid.BTN_A] = 0
                        
                 if(wm.state['buttons'] & cwiid.BTN_B):
-                    msg = START
-                    
-                #send only when change     
-                if not (msg =='' ):
-                    self.queue.put(msg)                    
+                    if(TimeOn[cwiid.BTN_B]):
+                        TimeOn[cwiid.BTN_B] = 1
+                        self.queue.put( START )
+                else:
+                    TimeOn[cwiid.BTN_B] = 0  
+                
+                if(wm.state['buttons'] & cwiid.BTN_RIGHT ):
+                    if(TimeOn[cwiid.BTN_RIGHT]==0):
+                        TimeOn[cwiid.BTN_RIGHT] = 1
+                        self.queue.put( SHOW_NEXT )
+                else:
+                    TimeOn[cwiid.BTN_RIGHT] = 0  
+
+                if(wm.state['buttons'] & cwiid.BTN_LEFT ):
+                    if(TimeOn[cwiid.BTN_LEFT]==0):
+                        TimeOn[cwiid.BTN_LEFT] = 1
+                        self.queue.put( SHOW_PREV )
+                else:
+                    TimeOn[cwiid.BTN_LEFT] = 0  
+                                       
             #####################################        
             time.sleep(SLEEP_TIME)
             
