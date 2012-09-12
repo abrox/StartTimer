@@ -52,7 +52,8 @@ class GuiPart:
         lStatus.pack(side='left')
        
         container.bind("<Configure>", self.resize)
-        
+        master.protocol("WM_DELETE_WINDOW", endCommand)
+
         self.state = self.STOPPED
         self.timerTick=66
         self.apu = 0
@@ -62,7 +63,7 @@ class GuiPart:
     def ScaleFont(self, height, width,tLen):
         if not tLen:
             return
-        print 'h:%d, w%d, l%d'%(height, width,tLen)
+        #print 'h:%d, w%d, l%d'%(height, width,tLen)
         font = tkFont.nametofont("TextFont")
         size = int(height * 0.7)
         size2 = int((width / tLen) * 1.3)
@@ -71,7 +72,6 @@ class GuiPart:
         font.configure(size=size)
 
     def resize(self,event):
-        print "resize"
         self.ScaleFont(event.height,event.width,len(self.lText.get()))
         
     def changeState(self,newState):
