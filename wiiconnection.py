@@ -9,13 +9,14 @@ START =2
 STOP = 3
 SHOW_NEXT= 4
 SHOW_PREV= 5
-
+SHOW_TIME =6
+HIDE_TIME =7
 class Server:
     NOT_CONNECTED=0
     CONNECTED = 1
     #These are quick and nasty hacks...FIX
     def rumble(self):
-        self.rumbleState=15
+        self.rumbleState=10
     def leds(self,no):
         if no == 0: 
             self.ledsTolit=0    
@@ -61,6 +62,7 @@ class Server:
         wm = None
         TimeOn={}
         SLEEP_TIME=0.01
+        
         while self.running:
             #######################################
             if ( self.state == self.NOT_CONNECTED):
@@ -70,6 +72,7 @@ class Server:
                     wm.rpt_mode = cwiid.RPT_BTN
                     self.queue.put(FOUND)
                     self.changeState(self.CONNECTED)
+                    TimeOn[cwiid.BTN_1] = 0
                 except:
                     pass
                 
@@ -106,7 +109,15 @@ class Server:
                         self.queue.put( SHOW_PREV )
                 else:
                     TimeOn[cwiid.BTN_LEFT] = 0  
-                                       
+            
+                if(wm.state['buttons'] & cwiid.BTN_1 ):
+                    if not (TimeOn[cwiid.BTN_1]):
+                        TimeOn[cwiid.BTN_1] = 1
+                        self.queue.put( SHOW_TIME )
+                else:
+                    if(TimeOn[cwiid.BTN_1] == 1):
+                        TimeOn[cwiid.BTN_1] = 0  
+                        self.queue.put( HIDE_TIME )              
             #####################################
             if (self.rumbleState):
                 wm.rumble=1

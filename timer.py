@@ -16,7 +16,7 @@ import Tkinter as tk
 import Queue
 import wiiconnection as wii
 import tkFont
-
+from datetime import datetime
  
 class GuiPart:
     INIT =0
@@ -56,11 +56,12 @@ class GuiPart:
         container.bind("<Configure>", self.resize)
         master.protocol("WM_DELETE_WINDOW", tClient.endApplication)
 
-        self.Timers=[60,120,180,240,300]
+        self.Timers=[60,120,180,240,300,600]
         self.usedTimer = 4 #5 min is default
         self.state = self.STOPPED
         self.timerTick=self.Timers[self.usedTimer]
         self.apu = 0
+        self.showTime =0
         self.showRaceTimer()
         # Add more UI stuff here
 
@@ -117,16 +118,20 @@ class GuiPart:
         
         print 'SHow prev%d'%self.usedTimer
     def showRaceTimer(self):
-        hour = self.timerTick/360
-        timeLeft = self.timerTick%360
+        #when show time do not override it with race timer
+        if self.showTime:
+            return
+        
+        hour = self.timerTick/3600
+        timeLeft = self.timerTick%3600
         
         mins = timeLeft/60
         secs = timeLeft%60
         timeString=''
         if hour:
-            timeString = '%02d:'%hour
+            timeString = '%d:'%hour
         if hour or mins:
-            timeString += '%02d:'%mins 
+            timeString += '%d:'%mins 
                    
         timeString += '%02d'%secs    
         self.lText.set(timeString)
@@ -138,10 +143,31 @@ class GuiPart:
             height = self.parent.winfo_height()
             self.ScaleFont(height, width,sLen)
     
+    def showDateTime(self):
+        d= datetime.now()
+        timeString = datetime.strftime(d,"%H:%M:%S")
+        self.lText.set(timeString)
+        sLen = len(timeString)
+        
+        if not (sLen == 0 or sLen == self.apu):
+            self.apu = sLen
+            width= self.parent.winfo_width()
+            height = self.parent.winfo_height()
+            self.ScaleFont(height, width,sLen)
+        
     def processIncoming(self,msg):
         """
         
         """
+        if msg == wii.SHOW_TIME:
+            self.showTime =1
+            
+        if ( self.showTime):
+            self.showDateTime()
+        
+        if (msg == wii.HIDE_TIME):
+            self.showTime =0
+            self.showRaceTimer()
         ###################################################
         if self.state == self.STOPPED:
             if (msg == wii.LOST):
@@ -166,7 +192,12 @@ class GuiPart:
                 #last minute rumble every 10 sec
                 if(self.timerTick<60 and not self.timerTick%10 ):
                     self.tClient.rumble()
-                     
+                    self.tClient.leds(self.timerTick/10)
+                #last 10 sec every sec
+                if(self.timerTick<10):
+                    self.tClient.rumble()
+                    self.tClient.leds(self.timerTick)
+                    
                 self.showRaceTimer()
                 if (self.timerTick ==0):
                     self.changeState(self.RACE)
