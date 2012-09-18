@@ -1,16 +1,7 @@
-## {{{ http://code.activestate.com/recipes/82965/ (r1)
+
 """
-This recipe describes how to handle asynchronous I/O in an environment where
-you are running Tkinter as the graphical user interface. Tkinter is safe
-to use as long as all the graphics commands are handled in a single thread.
-Since it is more efficient to make I/O channels to block and wait for something
-to happen rather than poll at regular intervals, we want I/O to be handled
-in separate threads. These can communicate in a threasafe way with the main,
-GUI-oriented process through one or several queues. In this solution the GUI
-still has to make a poll at a reasonable interval, to check if there is
-something in the queue that needs processing. Other solutions are possible,
-but they add a lot of complexity to the application.
-Created by Jacob Hallen, AB Strakt, Sweden.2001-10-17
+Simple sail boat race start application.
+Thus mouse is bit problematic in this case :-) control is done with wii remote. 
 """
 import Tkinter as tk
 import Queue
@@ -29,7 +20,6 @@ class GuiPart:
         self.parent = master
         self.tClient = tClient
         
-        # Set upthe GUI
         self._textFont = tkFont.Font(name="TextFont")
         self._textFont.configure(**tkFont.nametofont("TkDefaultFont").configure())
         
@@ -60,15 +50,17 @@ class GuiPart:
         self.usedTimer = 4 #5 min is default
         self.state = self.STOPPED
         self.timerTick=self.Timers[self.usedTimer]
-        self.apu = 0
+        self.timeTextLen = 0
         self.showTime =0
         self.showRaceTimer()
         # Add more UI stuff here
 
     def ScaleFont(self, height, width,tLen):
+        """
+        Scale timer text as big it can be.
+        """
         if not tLen:
             return
-        #print 'h:%d, w%d, l%d'%(height, width,tLen)
         font = tkFont.nametofont("TextFont")
         size = int(height * 0.7)
         size2 = int((width / tLen) * 1.3)
@@ -84,10 +76,11 @@ class GuiPart:
 
     def handleWiiLost(self):
         self.statBarText.set('No connection to WII press 1&2 to detct remote....')
-        pass
+
     def handleWiiFound(self):
         self.statBarText.set('Remote found')
         self.tClient.rumble()
+        
     def handleStart(self):
         self.timerTick = self.Timers[self.usedTimer]
         self.tClient.rumble()
@@ -137,8 +130,8 @@ class GuiPart:
         self.lText.set(timeString)
         sLen = len(timeString)
         
-        if not (sLen == 0 or sLen == self.apu):
-            self.apu = sLen
+        if not (sLen == 0 or sLen == self.timeTextLen):
+            self.timeTextLen = sLen
             width= self.parent.winfo_width()
             height = self.parent.winfo_height()
             self.ScaleFont(height, width,sLen)
@@ -149,20 +142,36 @@ class GuiPart:
         self.lText.set(timeString)
         sLen = len(timeString)
         
-        if not (sLen == 0 or sLen == self.apu):
-            self.apu = sLen
+        if not (sLen == 0 or sLen == self.timeTextLen):
+            self.timeTextLen = sLen
             width= self.parent.winfo_width()
             height = self.parent.winfo_height()
             self.ScaleFont(height, width,sLen)
         
+
+    def informUserWhileWaitStart(self,timeLeft):
+        """
+        Giving some feedback to user,with leds and rumbling wii remote
+        """
+        #rumble once every minute
+        if not (timeLeft % 60): 
+            self.tClient.rumble()
+            self.tClient.leds(timeLeft / 60)
+        #last minute rumble every 10 sec
+        if (timeLeft < 60 and not timeLeft % 10):
+            self.tClient.rumble()
+            self.tClient.leds(timeLeft / 10) 
+        #last 10 sec rubmle every sec
+        if (timeLeft < 10):
+            self.tClient.rumble()
+            self.tClient.leds(timeLeft)
+
     def processIncoming(self,msg):
         """
-        
-        """
-        if msg == wii.SHOW_TIME:
+        Handle incomming messages.
+        """ 
+        if ( msg == wii.SHOW_TIME):
             self.showTime =1
-            
-        if ( self.showTime):
             self.showDateTime()
         
         if (msg == wii.HIDE_TIME):
@@ -185,19 +194,7 @@ class GuiPart:
         elif self.state == self.WAIT_RACE_BEGIN:
             if (msg == 'ONE_SEC_TIMER'):
                 self.timerTick-=1
-                
-                if not ( self.timerTick%60 ):#rumble every one minute
-                    self.tClient.rumble()
-                    self.tClient.leds(self.timerTick/60)
-                #last minute rumble every 10 sec
-                if(self.timerTick<60 and not self.timerTick%10 ):
-                    self.tClient.rumble()
-                    self.tClient.leds(self.timerTick/10)
-                #last 10 sec every sec
-                if(self.timerTick<10):
-                    self.tClient.rumble()
-                    self.tClient.leds(self.timerTick)
-                    
+                self.informUserWhileWaitStart(self.timerTick)
                 self.showRaceTimer()
                 if (self.timerTick ==0):
                     self.changeState(self.RACE)
@@ -268,7 +265,10 @@ class ThreadedClient:
     
     #These are quick and nasty hacks...FIX
     def rumble(self): 
-        self.wiiServer.rumble() 
+        self.wiiServer.rumble(1)
+        self.master.after(100, self.stopRumble)
+    def stopRumble(self):
+        self.wiiServer.rumble(0)
     def leds(self,leds):
         self.wiiServer.leds(leds) 
              

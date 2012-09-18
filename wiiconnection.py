@@ -14,25 +14,23 @@ HIDE_TIME =7
 class Server:
     NOT_CONNECTED=0
     CONNECTED = 1
-    #These are quick and nasty hacks...FIX
-    def rumble(self):
-        self.rumbleState=10
+    def rumble(self, state):
+        self.wm.rumble = state
     def leds(self,no):
-        if no == 0: 
-            self.ledsTolit=0    
-        elif no == 1: 
-            self.ledsTolit=1
+        
+        ledsTolit=0    
+        if no == 1: 
+            ledsTolit=1
         elif no == 2: 
-            self.ledsTolit=3
+            ledsTolit=3
         elif no == 3: 
-            self.ledsTolit=7
+            ledsTolit=7
         elif no == 4: 
-            self.ledsTolit=15
+            ledsTolit=15
         else: 
-            self.ledsTolit =15
+            ledsTolit =15
             
-        print no
-        self.setLed =1;
+        self.wm.led =ledsTolit
         
     def changeState(self,newState):
         self.state = newState
@@ -42,9 +40,8 @@ class Server:
         self.queue = queue
         self.thread1 = None
         self.state = None
-        self.rumbleState=0
-        self.ledsTolit = 0
-        self.setLed =0 
+        self.wm = None 
+        
     def start(self):
         self.running = 1
         self.thread1 = threading.Thread(target=self.workerThread1)
@@ -59,7 +56,7 @@ class Server:
     def workerThread1(self):
         self.changeState(self.NOT_CONNECTED)
         self.queue.put(LOST)
-        wm = None
+        
         TimeOn={}
         SLEEP_TIME=0.01
         
@@ -67,9 +64,9 @@ class Server:
             #######################################
             if ( self.state == self.NOT_CONNECTED):
                 try:
-                    wm = cwiid.Wiimote()
+                    self.wm = cwiid.Wiimote()
                     #enable button reporting
-                    wm.rpt_mode = cwiid.RPT_BTN
+                    self.wm.rpt_mode = cwiid.RPT_BTN
                     self.queue.put(FOUND)
                     self.changeState(self.CONNECTED)
                     TimeOn[cwiid.BTN_1] = 0
@@ -80,7 +77,7 @@ class Server:
             elif ( self.state == self.CONNECTED): 
                 
                 #User must hold A button some while before we send stop message
-                if(wm.state['buttons'] & cwiid.BTN_A):
+                if(self.wm.state['buttons'] & cwiid.BTN_A):
                     TimeOn[cwiid.BTN_A]+=1
                     if (TimeOn[cwiid.BTN_A]*SLEEP_TIME >= 1.5):
                         TimeOn[cwiid.BTN_A] = 0
@@ -88,29 +85,28 @@ class Server:
                 else:#reset counter when button released
                     TimeOn[cwiid.BTN_A] = 0
                        
-                       
-                if(wm.state['buttons'] & cwiid.BTN_B):
+                if(self.wm.state['buttons'] & cwiid.BTN_B):
                     if not(TimeOn[cwiid.BTN_B]):
                         TimeOn[cwiid.BTN_B] = 1
                         self.queue.put( START )
                 else:
                     TimeOn[cwiid.BTN_B] = 0  
                 
-                if(wm.state['buttons'] & cwiid.BTN_RIGHT ):
+                if(self.wm.state['buttons'] & cwiid.BTN_RIGHT ):
                     if not (TimeOn[cwiid.BTN_RIGHT]):
                         TimeOn[cwiid.BTN_RIGHT] = 1
                         self.queue.put( SHOW_NEXT )
                 else:
                     TimeOn[cwiid.BTN_RIGHT] = 0  
 
-                if(wm.state['buttons'] & cwiid.BTN_LEFT ):
+                if(self.wm.state['buttons'] & cwiid.BTN_LEFT ):
                     if not (TimeOn[cwiid.BTN_LEFT]):
                         TimeOn[cwiid.BTN_LEFT] = 1
                         self.queue.put( SHOW_PREV )
                 else:
                     TimeOn[cwiid.BTN_LEFT] = 0  
             
-                if(wm.state['buttons'] & cwiid.BTN_1 ):
+                if(self.wm.state['buttons'] & cwiid.BTN_1 ):
                     if not (TimeOn[cwiid.BTN_1]):
                         TimeOn[cwiid.BTN_1] = 1
                         self.queue.put( SHOW_TIME )
@@ -119,22 +115,5 @@ class Server:
                         TimeOn[cwiid.BTN_1] = 0  
                         self.queue.put( HIDE_TIME )              
             #####################################
-            if (self.rumbleState):
-                wm.rumble=1
-                self.rumbleState -= 1
-                if not self.rumbleState:
-                    wm.rumble =0
             
-            
-            
-            if self.setLed:
-                self.setLed =0
-                wm.led =  self.ledsTolit
-                          
             time.sleep(SLEEP_TIME)
-            
-            
-            
-            
-            
-            
