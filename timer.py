@@ -50,17 +50,18 @@ class GuiPart:
         self.usedTimer = 4 #5 min is default
         self.state = self.STOPPED
         self.timerTick=self.Timers[self.usedTimer]
-        self.timeTextLen = 0
         self.showTime =0
         self.showRaceTimer()
         # Add more UI stuff here
 
-    def ScaleFont(self, height, width,tLen):
+    def ScaleFont(self, tLen):
         """
         Scale timer text as big it can be.
         """
         if not tLen:
             return
+        width= self.parent.winfo_width()
+        height = self.parent.winfo_height()
         font = tkFont.nametofont("TextFont")
         size = int(height * 0.7)
         size2 = int((width / tLen) * 1.3)
@@ -69,7 +70,7 @@ class GuiPart:
         font.configure(size=size)
 
     def resize(self,event):
-        self.ScaleFont(event.height,event.width,len(self.lText.get()))
+        self.ScaleFont(len(self.lText.get()))
         
     def changeState(self,newState):
         self.state = newState
@@ -126,27 +127,21 @@ class GuiPart:
         if hour or mins:
             timeString += '%d:'%mins 
                    
-        timeString += '%02d'%secs    
+        timeString += '%02d'%secs 
+        self.displayAndScaleText(timeString)
+    
+
+    def displayAndScaleText(self, timeString):
+        prevLen = len(self.lText.get())
         self.lText.set(timeString)
         sLen = len(timeString)
-        
-        if not (sLen == 0 or sLen == self.timeTextLen):
-            self.timeTextLen = sLen
-            width= self.parent.winfo_width()
-            height = self.parent.winfo_height()
-            self.ScaleFont(height, width,sLen)
-    
+        if sLen != prevLen:
+            self.ScaleFont(sLen)
+
     def showDateTime(self):
         d= datetime.now()
         timeString = datetime.strftime(d,"%H:%M:%S")
-        self.lText.set(timeString)
-        sLen = len(timeString)
-        
-        if not (sLen == 0 or sLen == self.timeTextLen):
-            self.timeTextLen = sLen
-            width= self.parent.winfo_width()
-            height = self.parent.winfo_height()
-            self.ScaleFont(height, width,sLen)
+        self.displayAndScaleText(timeString)
         
 
     def informUserWhileWaitStart(self,timeLeft):
@@ -168,7 +163,7 @@ class GuiPart:
 
     def processIncoming(self,msg):
         """
-        Handle incomming messages.
+        Handle incoming messages.
         """ 
         if ( msg == wii.SHOW_TIME):
             self.showTime =1
