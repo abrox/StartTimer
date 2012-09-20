@@ -84,8 +84,12 @@ class GuiPart:
         self.tClient.rumble()
         
     def startRaceTimer(self):
+        """
+        Inform user that countdown is started and change state machine state.
+        """
         self.tClient.rumble()
         self.tClient.leds(self.timerTickCount/60)
+        self.changeState(self.COUNTDOWN)
         print 'Start'
 
     def stopRaceTimer(self):
@@ -93,6 +97,10 @@ class GuiPart:
             self.changeState(self.TIMER_STOPPED)
             self.tClient.rumble()
             print 'STop'
+            
+    def resetRaceTimer(self):
+        self.timerTickCount = self.availableTimers[self.selectedTimer]
+        self.showRaceTimer()
 
     def selectNextTimer(self):
         """
@@ -114,6 +122,7 @@ class GuiPart:
         self.showRaceTimer()
         
         print 'SHow prev%d'%self.selectedTimer
+            
     def showRaceTimer(self):
         #when show time do not override it with race timer
         if self.showTime:
@@ -185,11 +194,12 @@ class GuiPart:
                 self.handleWiiFound()
             elif (msg == wii.START_COUNTDOWN):
                 self.startRaceTimer()
-                self.changeState(self.COUNTDOWN)
             elif (msg == wii.SHOW_NEXT):
                 self.selectNextTimer()
             elif (msg == wii.SHOW_PREV):
                 self.selectPreviousTimer()
+            elif (msg == wii.RESET_RACETIMER):
+                self.resetRaceTimer()
         ##########Countdown#################################
         elif self.state == self.COUNTDOWN:
             if (msg == 'ONE_SEC_TIMER'):

@@ -11,6 +11,8 @@ SHOW_NEXT= 4
 SHOW_PREV= 5
 SHOW_TIME =6
 HIDE_TIME =7
+RESET_RACETIMER = 8
+
 class Server:
     NOT_CONNECTED=0
     CONNECTED = 1
@@ -79,9 +81,10 @@ class Server:
                 #User must hold A button some while before we send stop message
                 if(self.wm.state['buttons'] & cwiid.BTN_A):
                     TimeOn[cwiid.BTN_A]+=1
-                    if (TimeOn[cwiid.BTN_A]*SLEEP_TIME >= 1.5):
-                        TimeOn[cwiid.BTN_A] = 0
+                    if (TimeOn[cwiid.BTN_A]==150):
                         self.queue.put(STOP_RACETIMER) 
+                    elif (TimeOn[cwiid.BTN_A]==300):
+                        self.queue.put(RESET_RACETIMER)
                 else:#reset counter when button released
                     TimeOn[cwiid.BTN_A] = 0
                        
