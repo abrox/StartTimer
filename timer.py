@@ -96,18 +96,21 @@ class GuiPart:
         print 'STop'
 
     def selectNextTimer(self):
-        try:
-            self.timerTickCount = self.availableTimers[self.selectedTimer+1]
-            self.selectedTimer+=1
-        except IndexError:
+        """
+        Select and show next available timer.
+        """
+        if self.selectedTimer < len(self.availableTimers)-1:
+            self.selectedTimer += 1
             self.timerTickCount = self.availableTimers[self.selectedTimer]
-        
         self.showRaceTimer()
         print 'SHow Next %d'%self.selectedTimer
 
     def selectPreviousTimer(self):
+        """
+        Select and show previous available timer.
+        """
         if self.selectedTimer > 0:
-            self.selectedTimer-=1
+            self.selectedTimer -= 1
             self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.showRaceTimer()
         
