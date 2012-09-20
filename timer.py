@@ -84,16 +84,15 @@ class GuiPart:
         self.tClient.rumble()
         
     def startRaceTimer(self):
-        self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.tClient.rumble()
         self.tClient.leds(self.timerTickCount/60)
         print 'Start'
 
     def stopRaceTimer(self):
-        self.timerTickCount = self.availableTimers[self.selectedTimer]
-        self.showRaceTimer()
-        self.tClient.rumble()
-        print 'STop'
+        if (self.state != self.TIMER_STOPPED):
+            self.changeState(self.TIMER_STOPPED)
+            self.tClient.rumble()
+            print 'STop'
 
     def selectNextTimer(self):
         """
@@ -169,14 +168,16 @@ class GuiPart:
         """
         Handle incoming messages.
         """ 
+        ###########Any state################################
         if ( msg == wii.SHOW_TIME):
             self.showTime =1
             self.showDateTime()
-        
-        if (msg == wii.HIDE_TIME):
+        elif (msg == wii.HIDE_TIME):
             self.showTime =0
             self.showRaceTimer()
-        ###################################################
+        elif (msg == wii.STOP_RACETIMER):
+            self.stopRaceTimer()
+        ##########Timer Stopped##############################
         if self.state == self.TIMER_STOPPED:
             if (msg == wii.LOST):
                 self.handleWiiLost()
@@ -189,22 +190,16 @@ class GuiPart:
                 self.selectNextTimer()
             elif (msg == wii.SHOW_PREV):
                 self.selectPreviousTimer()
-        ####################################################
+        ##########Countdown#################################
         elif self.state == self.COUNTDOWN:
             if (msg == 'ONE_SEC_TIMER'):
                 self.timerTickCount-=1
                 self.informWhileCountDown(self.timerTickCount)
                 self.showRaceTimer()
-                if (self.timerTickCount ==0):
+                if (self.timerTickCount == 0):
                     self.changeState(self.RACE)
-            elif (msg == wii.STOP_RACETIMER):
-                self.stopRaceTimer()
-                self.changeState(self.TIMER_STOPPED)
-        ####################################################    
+        ###############Race#################################    
         elif self.state == self.RACE:
-            if (msg == wii.STOP_RACETIMER):
-                self.stopRaceTimer()
-                self.changeState(self.TIMER_STOPPED)
             if (msg == 'ONE_SEC_TIMER'):
                 self.timerTickCount+=1
                 self.showRaceTimer()
