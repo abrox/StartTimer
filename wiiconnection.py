@@ -5,8 +5,8 @@ import cwiid
 #definations for  messages
 LOST = 0
 FOUND = 1
-START =2
-STOP = 3
+START_COUNTDOWN =2
+STOP_RACETIMER = 3
 SHOW_NEXT= 4
 SHOW_PREV= 5
 SHOW_TIME =6
@@ -81,14 +81,14 @@ class Server:
                     TimeOn[cwiid.BTN_A]+=1
                     if (TimeOn[cwiid.BTN_A]*SLEEP_TIME >= 1.5):
                         TimeOn[cwiid.BTN_A] = 0
-                        self.queue.put(STOP) 
+                        self.queue.put(STOP_RACETIMER) 
                 else:#reset counter when button released
                     TimeOn[cwiid.BTN_A] = 0
                        
                 if(self.wm.state['buttons'] & cwiid.BTN_B):
                     if not(TimeOn[cwiid.BTN_B]):
                         TimeOn[cwiid.BTN_B] = 1
-                        self.queue.put( START )
+                        self.queue.put( START_COUNTDOWN )
                 else:
                     TimeOn[cwiid.BTN_B] = 0  
                 

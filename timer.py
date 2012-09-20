@@ -1,7 +1,8 @@
 
 """
 Simple sail boat race start application.
-Thus mouse is bit problematic in this case :-) control is done with wii remote. 
+Thus mouse is bit problematic in this case :-) control is done with wii remote.
+ 
 """
 import Tkinter as tk
 import Queue
@@ -11,8 +12,8 @@ from datetime import datetime
  
 class GuiPart:
     INIT =0
-    STOPPED = 1
-    WAIT_RACE_BEGIN = 2
+    TIMER_STOPPED = 1
+    COUNTDOWN = 2
     RACE = 3
     
     def __init__(self, master, tClient):
@@ -26,11 +27,11 @@ class GuiPart:
         self._sbFont = tkFont.Font(name="StatusBarFont")
         self._sbFont.configure(**tkFont.nametofont("TkDefaultFont").configure())
         
-        toolbar = tk.Frame(master, borderwidth=0)
+        statusBar = tk.Frame(master, borderwidth=0)
         container = tk.Frame(master, borderwidth=1, relief="sunken", 
                              width=600, height=600)
         container.grid_propagate(False)
-        toolbar.pack(side="bottom", fill="x")
+        statusBar.pack(side="bottom", fill="x")
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
@@ -40,16 +41,16 @@ class GuiPart:
         text.grid(row=0, column=0, sticky="nsew")
         
         self.statBarText = tk.StringVar()
-        lStatus = tk.Label(toolbar, font='StatusBarFont', textvariable=self.statBarText )
+        lStatus = tk.Label(statusBar, font='StatusBarFont', textvariable=self.statBarText )
         lStatus.pack(side='left')
        
         container.bind("<Configure>", self.resize)
         master.protocol("WM_DELETE_WINDOW", tClient.endApplication)
 
-        self.Timers=[60,120,180,240,300,600]
-        self.usedTimer = 4 #5 min is default
-        self.state = self.STOPPED
-        self.timerTick=self.Timers[self.usedTimer]
+        self.availableTimers=[60,120,180,240,300,600]
+        self.selectedTimer = 4 #5 min is default
+        self.state = self.TIMER_STOPPED
+        self.timerTickCount=self.availableTimers[self.selectedTimer]
         self.showTime =0
         self.showRaceTimer()
         # Add more UI stuff here
@@ -82,42 +83,42 @@ class GuiPart:
         self.statBarText.set('Remote found')
         self.tClient.rumble()
         
-    def handleStart(self):
-        self.timerTick = self.Timers[self.usedTimer]
+    def startRaceTimer(self):
+        self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.tClient.rumble()
-        self.tClient.leds(self.timerTick/60)
+        self.tClient.leds(self.timerTickCount/60)
         print 'Start'
 
-    def handleStopTimer(self):
-        self.timerTick = self.Timers[self.usedTimer]
+    def stopRaceTimer(self):
+        self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.showRaceTimer()
         self.tClient.rumble()
         print 'STop'
 
-    def handleShowNext(self):
+    def selectNextTimer(self):
         try:
-            self.timerTick = self.Timers[self.usedTimer+1]
-            self.usedTimer+=1
+            self.timerTickCount = self.availableTimers[self.selectedTimer+1]
+            self.selectedTimer+=1
         except IndexError:
-            self.timerTick = self.Timers[self.usedTimer]
+            self.timerTickCount = self.availableTimers[self.selectedTimer]
         
         self.showRaceTimer()
-        print 'SHow Next %d'%self.usedTimer
+        print 'SHow Next %d'%self.selectedTimer
 
-    def handleShowPrev(self):
-        if self.usedTimer > 0:
-            self.usedTimer-=1
-            self.timerTick = self.Timers[self.usedTimer]
+    def selectPreviousTimer(self):
+        if self.selectedTimer > 0:
+            self.selectedTimer-=1
+            self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.showRaceTimer()
         
-        print 'SHow prev%d'%self.usedTimer
+        print 'SHow prev%d'%self.selectedTimer
     def showRaceTimer(self):
         #when show time do not override it with race timer
         if self.showTime:
             return
         
-        hour = self.timerTick/3600
-        timeLeft = self.timerTick%3600
+        hour = self.timerTickCount/3600
+        timeLeft = self.timerTickCount%3600
         
         mins = timeLeft/60
         secs = timeLeft%60
@@ -144,7 +145,7 @@ class GuiPart:
         self.displayAndScaleText(timeString)
         
 
-    def informUserWhileWaitStart(self,timeLeft):
+    def informWhileCountDown(self,timeLeft):
         """
         Giving some feedback to user,with leds and rumbling wii remote
         """
@@ -173,36 +174,36 @@ class GuiPart:
             self.showTime =0
             self.showRaceTimer()
         ###################################################
-        if self.state == self.STOPPED:
+        if self.state == self.TIMER_STOPPED:
             if (msg == wii.LOST):
                 self.handleWiiLost()
             elif (msg == wii.FOUND):
                 self.handleWiiFound()
-            elif (msg == wii.START):
-                self.handleStart()
-                self.changeState(self.WAIT_RACE_BEGIN)
+            elif (msg == wii.START_COUNTDOWN):
+                self.startRaceTimer()
+                self.changeState(self.COUNTDOWN)
             elif (msg == wii.SHOW_NEXT):
-                self.handleShowNext()
+                self.selectNextTimer()
             elif (msg == wii.SHOW_PREV):
-                self.handleShowPrev()
+                self.selectPreviousTimer()
         ####################################################
-        elif self.state == self.WAIT_RACE_BEGIN:
+        elif self.state == self.COUNTDOWN:
             if (msg == 'ONE_SEC_TIMER'):
-                self.timerTick-=1
-                self.informUserWhileWaitStart(self.timerTick)
+                self.timerTickCount-=1
+                self.informWhileCountDown(self.timerTickCount)
                 self.showRaceTimer()
-                if (self.timerTick ==0):
+                if (self.timerTickCount ==0):
                     self.changeState(self.RACE)
-            elif (msg == wii.STOP):
-                self.handleStopTimer()
-                self.changeState(self.STOPPED)
+            elif (msg == wii.STOP_RACETIMER):
+                self.stopRaceTimer()
+                self.changeState(self.TIMER_STOPPED)
         ####################################################    
         elif self.state == self.RACE:
-            if (msg == wii.STOP):
-                self.handleStopTimer()
-                self.changeState(self.STOPPED)
+            if (msg == wii.STOP_RACETIMER):
+                self.stopRaceTimer()
+                self.changeState(self.TIMER_STOPPED)
             if (msg == 'ONE_SEC_TIMER'):
-                self.timerTick+=1
+                self.timerTickCount+=1
                 self.showRaceTimer()
         ####################################################
 class ThreadedClient:
