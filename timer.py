@@ -27,11 +27,11 @@ class GuiPart:
         self._sbFont = tkFont.Font(name="StatusBarFont")
         self._sbFont.configure(**tkFont.nametofont("TkDefaultFont").configure())
         
-        statusBar = tk.Frame(master, borderwidth=0)
+        self.statusBar = tk.Frame(master, borderwidth=0)
         container = tk.Frame(master, borderwidth=1, relief="sunken", 
                              width=600, height=600)
         container.grid_propagate(False)
-        statusBar.pack(side="bottom", fill="x")
+        self.statusBar.pack(side="bottom", fill="x")
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
@@ -41,8 +41,8 @@ class GuiPart:
         text.grid(row=0, column=0, sticky="nsew")
         
         self.statBarText = tk.StringVar()
-        lStatus = tk.Label(statusBar, font='StatusBarFont', textvariable=self.statBarText )
-        lStatus.pack(side='left')
+        self.lStatus = tk.Label(self.statusBar, font='StatusBarFont', textvariable=self.statBarText )
+        self.lStatus.pack(side='left')
        
         container.bind("<Configure>", self.resize)
         master.protocol("WM_DELETE_WINDOW", tClient.endApplication)
@@ -53,11 +53,11 @@ class GuiPart:
         self.timerTickCount=self.availableTimers[self.selectedTimer]
         self.showTime =0
         self.showRaceTimer()
-        # Add more UI stuff here
 
     def ScaleFont(self, tLen):
         """
         Scale timer text as big it can be.
+        todo: Check is there better way than hardcode scaling factors ?
         """
         if not tLen:
             return
@@ -71,17 +71,32 @@ class GuiPart:
         font.configure(size=size)
 
     def resize(self,event):
+        """
+        Resize of the window will scale font as big as possible. 
+        """
         self.ScaleFont(len(self.lText.get()))
         
     def changeState(self,newState):
         self.state = newState
 
     def handleWiiLost(self):
-        self.statBarText.set('No connection to WII press 1&2 to detct remote....')
+        """
+        Inform user that we do not have connection to wiimote
+        using red background to highlight missing connection.
+        """
+        self.statusBar.config(background='red')
+        self.statBarText.set('No connection to WII press 1&2 to detect remote....')
+        self.statusBar.config(background='red')
+        self.lStatus.config(background='red',foreground='white')
 
     def handleWiiFound(self):
+        """
+        Inform user that connection to wiimote is established. 
+        """
         self.statBarText.set('Remote found')
         self.tClient.rumble()
+        self.statusBar.config(background='grey')
+        self.lStatus.config(background='grey',foreground='black')
         
     def startRaceTimer(self):
         """
