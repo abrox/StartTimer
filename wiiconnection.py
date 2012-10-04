@@ -5,13 +5,14 @@ import cwiid
 #definations for  messages
 LOST = 0
 FOUND = 1
-START_COUNTDOWN =2
+START_COUNTDOWN = 2
 STOP_RACETIMER = 3
-SHOW_NEXT= 4
-SHOW_PREV= 5
-SHOW_TIME =6
-HIDE_TIME =7
+SHOW_NEXT =  4
+SHOW_PREV =  5
+SHOW_TIME = 6
+HIDE_TIME = 7
 RESET_RACETIMER = 8
+INTERMEDIATE = 9
 
 class Server:
     NOT_CONNECTED=0
@@ -81,7 +82,9 @@ class Server:
                 #User must hold A button some while before we send stop message
                 if(self.wm.state['buttons'] & cwiid.BTN_A):
                     TimeOn[cwiid.BTN_A]+=1
-                    if (TimeOn[cwiid.BTN_A]==150):
+                    if (TimeOn[cwiid.BTN_A]==1 and self.wm.state['buttons'] & cwiid.BTN_B):
+                        self.queue.put(INTERMEDIATE)
+                    elif (TimeOn[cwiid.BTN_A]==150):
                         self.queue.put(STOP_RACETIMER) 
                     elif (TimeOn[cwiid.BTN_A]==300):
                         self.queue.put(RESET_RACETIMER)

@@ -1,5 +1,5 @@
 
-"""
+""" print ' print '%sTime to start:%s'%(timeString,self.getTimeString(self.timerTickCount))%sTime to start:%s'%(timeString,self.getTimeString(self.timerTickCount))
 Simple sail boat race start application.
 Thus mouse is bit problematic in this case :-) control is done with wii remote.
  
@@ -8,7 +8,8 @@ import Tkinter as tk
 import Queue
 import wiiconnection as wii
 import tkFont
-from datetime import datetime
+from time import  strftime
+from datetime import timedelta
  
 class GuiPart:
     INIT =0
@@ -57,9 +58,9 @@ class GuiPart:
     def ScaleFont(self, tLen):
         """
         Scale timer text as big it can be.
-        todo: Check is there better way than hardcode scaling factors ?
+        todo: Check is there better way than hardcoded scaling factors ?
         """
-        if not tLen:
+        if tLen == 0:
             return
         width= self.parent.winfo_width()
         height = self.parent.winfo_height()
@@ -105,13 +106,11 @@ class GuiPart:
         self.tClient.rumble()
         self.tClient.leds(self.timerTickCount/60)
         self.changeState(self.COUNTDOWN)
-        print 'Start'
 
     def stopRaceTimer(self):
         if (self.state != self.TIMER_STOPPED):
             self.changeState(self.TIMER_STOPPED)
             self.tClient.rumble()
-            print 'STop'
             
     def resetRaceTimer(self):
         self.timerTickCount = self.availableTimers[self.selectedTimer]
@@ -125,7 +124,6 @@ class GuiPart:
             self.selectedTimer += 1
             self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.showRaceTimer()
-        print 'SHow Next %d'%self.selectedTimer
 
     def selectPreviousTimer(self):
         """
@@ -135,26 +133,31 @@ class GuiPart:
             self.selectedTimer -= 1
             self.timerTickCount = self.availableTimers[self.selectedTimer]
         self.showRaceTimer()
-        
-        print 'SHow prev%d'%self.selectedTimer
             
+
+    def getTimeString(self,ticks):
+        """
+        Construct time to correct format.
+        todo: is there some library function/ class for this 
+        """
+        hour = ticks / 3600
+        timeLeft = ticks % 3600
+        mins = timeLeft / 60
+        secs = timeLeft % 60
+        timeString = ''
+        if hour:
+            timeString = '%d:' % hour
+        if hour or mins:
+            timeString += '%d:' % mins
+        timeString += '%02d' % secs
+        return timeString
+
     def showRaceTimer(self):
         #when show time do not override it with race timer
         if self.showTime:
             return
         
-        hour = self.timerTickCount/3600
-        timeLeft = self.timerTickCount%3600
-        
-        mins = timeLeft/60
-        secs = timeLeft%60
-        timeString=''
-        if hour:
-            timeString = '%d:'%hour
-        if hour or mins:
-            timeString += '%d:'%mins 
-                   
-        timeString += '%02d'%secs 
+        timeString = self.getTimeString(self.timerTickCount) 
         self.displayAndScaleText(timeString)
     
 
@@ -165,9 +168,8 @@ class GuiPart:
         if sLen != prevLen:
             self.ScaleFont(sLen)
 
-    def showDateTime(self):
-        d= datetime.now()
-        timeString = datetime.strftime(d,"%H:%M:%S")
+    def showClock(self):
+        timeString = strftime("%H:%M:%S")
         self.displayAndScaleText(timeString)
         
 
@@ -195,12 +197,13 @@ class GuiPart:
         ###########Any state################################
         if ( msg == wii.SHOW_TIME):
             self.showTime =1
-            self.showDateTime()
+            self.showClock()
         elif (msg == wii.HIDE_TIME):
             self.showTime =0
             self.showRaceTimer()
         elif (msg == wii.STOP_RACETIMER):
             self.stopRaceTimer()
+            
         ##########Timer Stopped##############################
         if self.state == self.TIMER_STOPPED:
             if (msg == wii.LOST):
@@ -222,12 +225,20 @@ class GuiPart:
                 self.informWhileCountDown(self.timerTickCount)
                 self.showRaceTimer()
                 if (self.timerTickCount == 0):
+                    timeString = strftime("%H:%M:%S")
+                    print '%s\tSTART....'%(timeString)
                     self.changeState(self.RACE)
+            elif (msg == wii.INTERMEDIATE):
+                timeString = strftime("%H:%M:%S")
+                print '%s\tTime to start:\t %s'%(timeString,timedelta(seconds=self.timerTickCount))
         ###############Race#################################    
         elif self.state == self.RACE:
             if (msg == 'ONE_SEC_TIMER'):
                 self.timerTickCount+=1
                 self.showRaceTimer()
+            elif (msg == wii.INTERMEDIATE):
+                timeString = strftime("%H:%M:%S")
+                print '%s\tRace is on:\t%s'%(timeString,timedelta(seconds=self.timerTickCount))
         ####################################################
 class ThreadedClient:
     """
@@ -281,14 +292,20 @@ class ThreadedClient:
                
     def endApplication(self):
         self.wiiServer.stop()
-    
-    #These are quick and nasty hacks...FIX
-    def rumble(self): 
+
+    def rumble(self):
+        """
+        Rumble wii for a while
+        """
         self.wiiServer.rumble(1)
         self.master.after(100, self.stopRumble)
+        
     def stopRumble(self):
         self.wiiServer.rumble(0)
     def leds(self,leds):
+        """
+        Lif Leds so that user sees how long there is time to start.
+        """
         self.wiiServer.leds(leds) 
              
 if __name__ == "__main__":
