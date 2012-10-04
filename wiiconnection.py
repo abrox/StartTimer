@@ -13,6 +13,8 @@ SHOW_TIME = 6
 HIDE_TIME = 7
 RESET_RACETIMER = 8
 INTERMEDIATE = 9
+SHOW_HELP = 10
+HIDE_HELP =11
 
 class Server:
     NOT_CONNECTED=0
@@ -73,6 +75,7 @@ class Server:
                     self.queue.put(FOUND)
                     self.changeState(self.CONNECTED)
                     TimeOn[cwiid.BTN_1] = 0
+                    TimeOn[cwiid.BTN_HOME] = 0
                 except:
                     pass
                 
@@ -119,7 +122,16 @@ class Server:
                 else:
                     if(TimeOn[cwiid.BTN_1] == 1):
                         TimeOn[cwiid.BTN_1] = 0  
-                        self.queue.put( HIDE_TIME )              
+                        self.queue.put( HIDE_TIME )
+                        
+                if(self.wm.state['buttons'] & cwiid.BTN_HOME ):
+                    if not (TimeOn[cwiid.BTN_HOME]):
+                        TimeOn[cwiid.BTN_HOME] = 1
+                        self.queue.put( SHOW_HELP )
+                else:
+                    if(TimeOn[cwiid.BTN_HOME] == 1):
+                        TimeOn[cwiid.BTN_HOME] = 0  
+                        self.queue.put( HIDE_HELP )               
             #####################################
             
             time.sleep(SLEEP_TIME)

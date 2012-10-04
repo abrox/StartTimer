@@ -48,7 +48,7 @@ class GuiPart:
         container.bind("<Configure>", self.resize)
         master.protocol("WM_DELETE_WINDOW", tClient.endApplication)
 
-        self.availableTimers=[60,120,180,240,300,600]
+        self.availableTimers=[60,120,180,240,300,360,600]
         self.selectedTimer = 4 #5 min is default
         self.state = self.TIMER_STOPPED
         self.timerTickCount=self.availableTimers[self.selectedTimer]
@@ -94,7 +94,7 @@ class GuiPart:
         """
         Inform user that connection to wiimote is established. 
         """
-        self.statBarText.set('Remote found')
+        self.statBarText.set('Press home for help')
         self.tClient.rumble()
         self.statusBar.config(background='grey')
         self.lStatus.config(background='grey',foreground='black')
@@ -172,6 +172,17 @@ class GuiPart:
         timeString = strftime("%H:%M:%S")
         self.displayAndScaleText(timeString)
         
+    def showHelp(self):
+        helpText ='Detect wiimote: Press 1&2 together                      \n'
+        helpText+='Select timer: Use Right and Left arrows                 \n'
+        helpText+='Start or continue timer: Press B                        \n'
+        helpText+='Stop timer: Press A for few seconds                     \n'
+        helpText+='Reset timer: Press A for about 3 seconds                \n'
+        helpText+='Intermediate time: Press first B and then A at same time\n'
+        helpText+='Show Time: Press 1                                      \n'
+        self.lText.set(helpText)
+    
+        self.ScaleFont(55)
 
     def informWhileCountDown(self,timeLeft):
         """
@@ -203,7 +214,11 @@ class GuiPart:
             self.showRaceTimer()
         elif (msg == wii.STOP_RACETIMER):
             self.stopRaceTimer()
-            
+        elif (msg == wii.SHOW_HELP):
+            self.showHelp()
+        elif( msg == wii.HIDE_HELP): 
+            self.showTime = 0   
+            self.showRaceTimer()
         ##########Timer Stopped##############################
         if self.state == self.TIMER_STOPPED:
             if (msg == wii.LOST):
@@ -230,7 +245,7 @@ class GuiPart:
                     self.changeState(self.RACE)
             elif (msg == wii.INTERMEDIATE):
                 timeString = strftime("%H:%M:%S")
-                print '%s\tTime to start:\t %s'%(timeString,timedelta(seconds=self.timerTickCount))
+                print '%s\tTime to start:\t%s'%(timeString,timedelta(seconds=self.timerTickCount))
         ###############Race#################################    
         elif self.state == self.RACE:
             if (msg == 'ONE_SEC_TIMER'):
