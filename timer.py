@@ -10,7 +10,8 @@ import wiiconnection as wii
 import tkFont
 from time import  strftime
 from datetime import timedelta
- 
+import string
+
 class GuiPart:
     INIT =0
     TIMER_STOPPED = 1
@@ -38,7 +39,7 @@ class GuiPart:
         container.grid_columnconfigure(0, weight=1)
         
         self.lText = tk.StringVar()
-        text = tk.Label(container, font="TextFont", textvariable=self.lText)
+        text = tk.Label(container, font="TextFont", textvariable=self.lText, justify='left')
         text.grid(row=0, column=0, sticky="nsew")
         
         self.statBarText = tk.StringVar()
@@ -52,8 +53,8 @@ class GuiPart:
         self.selectedTimer = 4 #5 min is default
         self.state = self.TIMER_STOPPED
         self.timerTickCount=self.availableTimers[self.selectedTimer]
-        self.showTime =0
-        self.showRaceTimer()
+        self.hideRacetimer = False
+        self.showHelp()
 
     def ScaleFont(self, tLen):
         """
@@ -75,7 +76,8 @@ class GuiPart:
         """
         Resize of the window will scale font as big as possible. 
         """
-        self.ScaleFont(len(self.lText.get()))
+        textLen = self.getLongestLine(self.lText.get())
+        self.ScaleFont(textLen)
         
     def changeState(self,newState):
         self.state = newState
@@ -98,6 +100,7 @@ class GuiPart:
         self.tClient.rumble()
         self.statusBar.config(background='grey')
         self.lStatus.config(background='grey',foreground='black')
+        self.showRaceTimer()
         
     def startRaceTimer(self):
         """
@@ -153,18 +156,32 @@ class GuiPart:
         return timeString
 
     def showRaceTimer(self):
-        #when show time do not override it with race timer
-        if self.showTime:
+        #when show time or help dont let racetimer overrun. 
+        if self.hideRacetimer:
             return
         
         timeString = self.getTimeString(self.timerTickCount) 
         self.displayAndScaleText(timeString)
     
+    def getLongestLine(self, theSring):
+        """
+        Utility function to
+        get longest line from multiline string.
+        """
+        sLen = 0
+        for line in theSring.split('\n'):
+            aLen = len(line)
+            if aLen > sLen:
+                sLen = aLen    
+        return sLen
 
-    def displayAndScaleText(self, timeString):
-        prevLen = len(self.lText.get())
-        self.lText.set(timeString)
-        sLen = len(timeString)
+    def displayAndScaleText(self, stringToShow):        
+        
+        prevLen = self.getLongestLine(self.lText.get())
+        sLen = self.getLongestLine(stringToShow)
+        
+        self.lText.set(stringToShow)
+        
         if sLen != prevLen:
             self.ScaleFont(sLen)
 
@@ -173,17 +190,17 @@ class GuiPart:
         self.displayAndScaleText(timeString)
         
     def showHelp(self):
-        helpText ='Detect wiimote: Press 1&2 together                      \n'
-        helpText+='Select timer: Use Right and Left arrows                 \n'
-        helpText+='Start or continue timer: Press B                        \n'
-        helpText+='Stop timer: Press A for few seconds                     \n'
-        helpText+='Reset timer: Press A for about 3 seconds                \n'
+        helpText ='Detect wii:    Press 1&2 together\n'
+        helpText+='Select timer:  Use Right and Left arrows\n'
+        helpText+='Start timer:   Press B\n'
+        helpText+='Stop timer:    Press A for few seconds\n'
+        helpText+='Reset timer:   Press A for about 3 seconds\n'
+        helpText+='Show Time:     Press 1\n'
+        helpText+='Show help:     Press home\n'
         helpText+='Intermediate time: Press first B and then A at same time\n'
-        helpText+='Show Time: Press 1                                      \n'
-        self.lText.set(helpText)
     
-        self.ScaleFont(55)
-
+        self.displayAndScaleText(helpText)
+        
     def informWhileCountDown(self,timeLeft):
         """
         Giving some feedback to user,with leds and rumbling wii remote
@@ -207,17 +224,18 @@ class GuiPart:
         """ 
         ###########Any state################################
         if ( msg == wii.SHOW_TIME):
-            self.showTime =1
+            self.hideRacetimer = True
             self.showClock()
         elif (msg == wii.HIDE_TIME):
-            self.showTime =0
+            self.hideRacetimer = False
             self.showRaceTimer()
         elif (msg == wii.STOP_RACETIMER):
             self.stopRaceTimer()
         elif (msg == wii.SHOW_HELP):
+            self.hideRacetimer = False
             self.showHelp()
         elif( msg == wii.HIDE_HELP): 
-            self.showTime = 0   
+            self.hideRacetimer = False
             self.showRaceTimer()
         ##########Timer Stopped##############################
         if self.state == self.TIMER_STOPPED:
