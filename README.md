@@ -2,11 +2,13 @@
 Simple sail race start timer application for PC controlled with wiimote. 
 #Usage
 Copy time.py and wiiconnection.py to some directory and then just:
+    
     $ python timer.py
 
 Some stuff You must install in order to use Wii with You computer:
 
 [Pywiuse]( http://code.google.com/p/pywiiuse/) is needed:
+   
    $ easy_install wiiuse
 
 
