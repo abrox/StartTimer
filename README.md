@@ -9,7 +9,7 @@ Some stuff You must install in order to use Wii with You computer:
 
 [Pywiuse]( http://code.google.com/p/pywiiuse/) is needed:
    
-   $ easy_install wiiuse
+    $ easy_install wiiuse
 
 
 #FAQ
