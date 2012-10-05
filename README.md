@@ -13,10 +13,10 @@ Some stuff You must install in order to use Wii with You computer:
 
 
 #FAQ
-Q:What are platforms supported ?
-A:I have tested with Ubuntu 12.04 basically this should work what ever platform python & pywiiuse are available.
+Q:What are platforms supported ?\n
+A:I have tested with Ubuntu 12.04 basically this should work what ever platform python & pywiiuse are available.\n
 
-Q:WHy this kind of projects ?
-A:Well what else nerd can do if need sail race timer? :-) Just for fun and do something with Python.
+Q:WHy this kind of projects ?\n
+A:Well what else nerd can do if need sail race timer? :-) Just for fun and do something with Python.\n
 
  
