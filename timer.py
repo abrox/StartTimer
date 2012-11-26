@@ -1,5 +1,5 @@
 
-""" print ' print '%sTime to start:%s'%(timeString,self.getTimeString(self.timerTickCount))%sTime to start:%s'%(timeString,self.getTimeString(self.timerTickCount))
+""" 
 Simple sail boat race start application.
 Thus mouse is bit problematic in this case :-) control is done with wii remote.
  
@@ -10,7 +10,6 @@ import wiiconnection as wii
 import tkFont
 from time import  strftime
 from datetime import timedelta
-import string
 
 class GuiPart:
     INIT =0
