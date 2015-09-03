@@ -1,7 +1,7 @@
 
 Simple sailrace starttimer application for PC controlled with wiimote. 
 #Usage
-Copy time.py and wiiconnection.py to some directory and then just:
+Copy timer.py and wiiconnection.py to some directory and then just:
     
     $ python timer.py
 
@@ -23,7 +23,7 @@ Some stuff You must install in order to use Wii with You computer( Ubuntu 11.04 
 
 #FAQ
 Q:What are platforms supported ?  
-A:I have tested with Ubuntu 12.04 basically this should work what ever platform python & pywiiuse are available.  
+A:I have tested with Ubuntu 12.04 and 14.04 basically this should work what ever platform python & pywiiuse are available.  
 
 Q:Why this kind of projects  
 A:Well what else nerd can do if need sail race timer? :-) Just for fun and do something with Python.  
