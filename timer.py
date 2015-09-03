@@ -48,8 +48,8 @@ class GuiPart:
         container.bind("<Configure>", self.resize)
         master.protocol("WM_DELETE_WINDOW", tClient.endApplication)
 
-        self.availableTimers=[60,120,180,240,300,360,600]
-        self.selectedTimer = 4 #5 min is default
+        self.availableTimers=[10,60,120,180,240,300,360,600]
+        self.selectedTimer = 5#5 min is default
         self.state = self.TIMER_STOPPED
         self.timerTickCount=self.availableTimers[self.selectedTimer]
         self.hideRacetimer = False
@@ -204,18 +204,24 @@ class GuiPart:
         """
         Giving some feedback to user,with leds and rumbling wii remote
         """
-        #rumble once every minute
-        if not (timeLeft % 60): 
-            self.tClient.rumble()
-            self.tClient.leds(timeLeft / 60)
-        #last minute rumble every 10 sec
-        if (timeLeft < 60 and not timeLeft % 10):
-            self.tClient.rumble()
-            self.tClient.leds(timeLeft / 10) 
-        #last 10 sec rubmle every sec
-        if (timeLeft < 10):
+        
+        if (timeLeft == 0):
+            #Ruble longer when it is start time
+            self.tClient.rumble(2000)
+            self.tClient.leds(timeLeft)
+        elif (timeLeft < 10 ):
+            #last 10 sec rubmle every sec
             self.tClient.rumble()
             self.tClient.leds(timeLeft)
+        elif (timeLeft < 60 and not timeLeft % 10):
+            #Rumble every 10 second on last minute
+            self.tClient.rumble()
+            self.tClient.leds(timeLeft / 10)   
+        elif not (timeLeft % 60): 
+            #rumble once every minute
+            self.tClient.rumble()
+            self.tClient.leds(timeLeft / 60)
+        
 
     def processIncoming(self,msg):
         """
@@ -231,7 +237,7 @@ class GuiPart:
         elif (msg == wii.STOP_RACETIMER):
             self.stopRaceTimer()
         elif (msg == wii.SHOW_HELP):
-            self.hideRacetimer = False
+            self.hideRacetimer = True
             self.showHelp()
         elif( msg == wii.HIDE_HELP): 
             self.hideRacetimer = False
@@ -325,12 +331,12 @@ class ThreadedClient:
     def endApplication(self):
         self.wiiServer.stop()
 
-    def rumble(self):
+    def rumble(self,time=100):
         """
         Rumble wii for a while
         """
         self.wiiServer.rumble(1)
-        self.master.after(100, self.stopRumble)
+        self.master.after(time, self.stopRumble)
         
     def stopRumble(self):
         self.wiiServer.rumble(0)
